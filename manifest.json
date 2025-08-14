@@ -1,0 +1,26 @@
+{
+  "short_name": "Svenska",
+  "name": "Svenska Flashcards",
+  "description": "A simple and beautiful flashcard app to help you learn common Swedish words, designed with a clean, mobile-first interface.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1e293b",
+  "background_color": "#e5e7eb"
+}
