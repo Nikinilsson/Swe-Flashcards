@@ -9,6 +9,8 @@ const urlsToCache = [
   '/components/Flashcard.tsx',
   '/components/IconButton.tsx',
   '/components/icons.tsx',
+  '/components/WeeklyProgress.tsx',
+  '/components/ChallengeMode.tsx',
   '/icon.svg',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&family=Inter:wght@400;500;600;700&display=swap'

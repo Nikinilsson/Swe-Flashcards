@@ -8,6 +8,13 @@ import WeeklyProgress from './components/WeeklyProgress.tsx';
 import ChallengeMode from './components/ChallengeMode.tsx';
 import type { Word } from './types.ts';
 
+// Extend the window interface to declare our custom API key property
+declare global {
+  interface Window {
+    GEMINI_API_KEY?: string;
+  }
+}
+
 // Helper function to handle JSON parsing, even if wrapped in markdown
 const cleanAndParseJson = (text: string): any => {
   let cleanedText = text.trim();
@@ -27,11 +34,20 @@ const App: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [apiKeyStatus, setApiKeyStatus] = useState<'checking' | 'valid' | 'invalid'>('checking');
   const [weeklyProgress, setWeeklyProgress] = useState<boolean[]>(new Array(7).fill(false));
   const [completionCount, setCompletionCount] = useState<number>(0);
   const [mode, setMode] = useState<'flashcard' | 'challenge'>('flashcard');
 
   useEffect(() => {
+    // Check for API Key first. This prevents the app from crashing.
+    if (!window.GEMINI_API_KEY || window.GEMINI_API_KEY === 'YOUR_API_KEY_HERE') {
+        setApiKeyStatus('invalid');
+        setLoading(false);
+        return;
+    }
+    setApiKeyStatus('valid');
+    
     // Helper to get Monday of the week for a given date
     const getStartOfWeek = (date: Date): Date => {
       const d = new Date(date);
@@ -102,7 +118,7 @@ const App: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const ai = new GoogleGenAI({ apiKey: window.GEMINI_API_KEY! });
         const wordsSchema = {
           type: Type.ARRAY,
           items: {
@@ -165,11 +181,25 @@ const App: React.FC = () => {
   const handlePrev = useCallback(() => {
     setCurrentIndex((prevIndex) => (prevIndex - 1 + words.length) % words.length);
   }, [words.length]);
-
-  const currentWord = words[currentIndex];
+  
   const today = new Date();
   const dateOptions: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
   const formattedDate = today.toLocaleDateString('en-US', dateOptions);
+
+  if (apiKeyStatus === 'invalid') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-red-100">
+        <div className="w-full max-w-sm text-center bg-white p-8 rounded-2xl shadow-2xl border-2 border-red-500">
+          <h1 className="text-2xl font-bold text-red-700 mb-4">Configuration Error</h1>
+          <p className="text-slate-600">
+            The Gemini API key has not been configured correctly. Please follow the deployment instructions to add your API key.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentWord = words[currentIndex];
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-200">
