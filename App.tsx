@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { words as staticWords } from './data/words.ts';
@@ -251,9 +252,21 @@ const App: React.FC = () => {
   if (apiKeyStatus === 'invalid') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-800 text-white">
-        <div className="w-full max-w-md text-center bg-slate-900/50 p-8 rounded-2xl shadow-2xl border border-red-500/50">
+        <div className="w-full max-w-lg text-left bg-slate-900/50 p-8 rounded-2xl shadow-2xl border border-red-500/50">
           <h1 className="text-2xl font-bold text-red-400 mb-4">Configuration Error</h1>
-          <p className="text-slate-300">The Gemini API key is not configured. Please follow deployment instructions.</p>
+          <p className="text-slate-300 mb-4">The Gemini API key is missing or invalid.</p>
+          <p className="text-slate-300 mb-2">To fix this for deployment on a platform like Netlify:</p>
+          <ol className="list-decimal list-inside text-slate-400 space-y-2">
+            <li>Go to your site settings on Netlify.</li>
+            <li>Navigate to "Build & deploy" &gt; "Post processing" &gt; "Snippet injection".</li>
+            <li>Click "Add snippet", set it to "Insert before &lt;/head&gt;", and add the following script:</li>
+          </ol>
+          <pre className="bg-slate-800 text-yellow-200 p-3 rounded-md mt-4 text-sm whitespace-pre-wrap">
+            <code>
+              {'<script>window.GEMINI_API_KEY = "YOUR_API_KEY_HERE";</script>'}
+            </code>
+          </pre>
+          <p className="text-slate-400 mt-4">Replace <code className="bg-slate-700 p-1 rounded-md text-xs">YOUR_API_KEY_HERE</code> with your actual Gemini API key.</p>
         </div>
       </div>
     );

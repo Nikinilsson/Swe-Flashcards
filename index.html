@@ -43,11 +43,15 @@
 </script>
 <!--
   IMPORTANT FOR DEPLOYMENT:
-  Platforms like Netlify should use "Snippet Injection" to replace this script tag
-  with one containing the real API key. The script should be:
-  <script>window.GEMINI_API_KEY = 'YOUR_ACTUAL_API_KEY';</script>
+  This application requires a Gemini API key to work.
+  On platforms like Netlify, use the "Snippet injection" feature
+  (in Site settings > Build & deploy > Post processing)
+  to add the following script tag before the closing </head> tag:
+
+  <script>window.GEMINI_API_KEY = "YOUR_API_KEY_HERE";</script>
+
+  Replace "YOUR_API_KEY_HERE" with your actual Gemini API key.
 -->
-<script>window.GEMINI_API_KEY = 'YOUR_API_KEY_HERE';</script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
   <body>
