@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Word } from '../types.ts';
 import { ArrowLeftIcon } from './icons.tsx';
@@ -16,9 +18,10 @@ interface Question {
 interface ChallengeModeProps {
   words: Word[];
   onExit: () => void;
+  onComplete: (score: number) => void;
 }
 
-const ChallengeMode: React.FC<ChallengeModeProps> = ({ words, onExit }) => {
+const ChallengeMode: React.FC<ChallengeModeProps> = ({ words, onExit, onComplete }) => {
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'results'>('intro');
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -156,24 +159,22 @@ const ChallengeMode: React.FC<ChallengeModeProps> = ({ words, onExit }) => {
     <div className="text-center text-white p-6 flex flex-col items-center justify-center h-full">
       <h2 className="text-3xl font-bold mb-2 text-shadow">Time's Up!</h2>
       <p className="text-6xl font-bold mb-4 text-shadow">{score}</p>
-      <p className="mb-8 text-shadow">Your Final Score</p>
+      <p className="mb-8 text-shadow">Your Score (+{score} XP)</p>
       <button 
-        onClick={startChallenge}
+        onClick={() => onComplete(score)}
         className="bg-blue-500 text-white font-bold py-3 px-8 rounded-full shadow-lg text-lg mb-4 hover:bg-blue-600 transition-transform transform hover:scale-105 w-full"
       >
-        Play Again
+        Finish Challenge
       </button>
     </div>
   );
 
   return (
     <div className="w-full h-full flex flex-col relative">
-      {gameState !== 'intro' && (
-        <button onClick={onExit} className="absolute top-3 left-3 z-20 text-white bg-black/30 rounded-full p-2 hover:bg-black/50 transition-colors" aria-label="Exit challenge mode">
-            <ArrowLeftIcon />
-        </button>
-      )}
-
+      <button onClick={onExit} className="absolute top-3 left-3 z-20 text-white bg-black/30 rounded-full p-2 hover:bg-black/50 transition-colors" aria-label="Exit session">
+          <ArrowLeftIcon />
+      </button>
+      
       {gameState === 'intro' && renderIntro()}
       {gameState === 'playing' && renderGame()}
       {gameState === 'results' && renderResults()}

@@ -11,6 +11,8 @@ const urlsToCache = [
   '/components/icons.tsx',
   '/components/WeeklyProgress.tsx',
   '/components/ChallengeMode.tsx',
+  '/components/WelcomeScreen.tsx',
+  '/components/SentenceScramble.tsx',
   '/icon.svg',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&family=Inter:wght@400;500;600;700&display=swap'
