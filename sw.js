@@ -13,6 +13,9 @@ const urlsToCache = [
   '/components/ChallengeMode.tsx',
   '/components/WelcomeScreen.tsx',
   '/components/SentenceScramble.tsx',
+  '/components/GrammarDetective.tsx',
+  '/components/DailySummary.tsx',
+  '/components/WordQuiz.tsx',
   '/icon.svg',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500&family=Inter:wght@400;500;600;700&display=swap'

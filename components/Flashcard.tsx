@@ -30,7 +30,8 @@ const Flashcard: React.FC<FlashcardProps> = ({ word }) => {
     // Cancel any previous speech to prevent overlap.
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(word.swedish);
+    const textToSpeak = word.swedishSentence ? `${word.swedish}. ${word.swedishSentence}` : word.swedish;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'sv-SE';
     
     // Manage UI state based on speech events.
@@ -49,7 +50,7 @@ const Flashcard: React.FC<FlashcardProps> = ({ word }) => {
     }
     
     window.speechSynthesis.speak(utterance);
-  }, [word.swedish, isSpeechSupported]);
+  }, [word.swedish, word.swedishSentence, isSpeechSupported]);
   
   // Auto-play sound when the card's word changes.
   useEffect(() => {
@@ -108,7 +109,10 @@ const Flashcard: React.FC<FlashcardProps> = ({ word }) => {
         {/* Front of the card (Swedish) */}
         <div className="absolute w-full h-full [backface-visibility:hidden] bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center justify-center p-4 border border-white/20">
           <span className="text-slate-600 text-sm mb-2 font-medium">Swedish</span>
-          <p className="text-4xl md:text-5xl font-bold text-slate-900 text-center">{word.swedish}</p>
+          <p className="text-3xl md:text-4xl font-bold text-slate-900 text-center">{word.swedish}</p>
+          {word.swedishSentence && (
+            <p className="text-slate-700 mt-3 text-center italic text-base">"{word.swedishSentence}"</p>
+          )}
           <button 
              onClick={onSoundClick} 
              className="absolute bottom-4 right-4 text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -123,7 +127,10 @@ const Flashcard: React.FC<FlashcardProps> = ({ word }) => {
         {/* Back of the card (English) */}
         <div className="absolute w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] bg-blue-500/90 backdrop-blur-lg rounded-2xl shadow-lg flex flex-col items-center justify-center p-4 border border-white/20">
           <span className="text-blue-100 text-sm mb-2 font-medium">English</span>
-          <p className="text-4xl md:text-5xl font-bold text-white text-center">{word.english}</p>
+          <p className="text-3xl md:text-4xl font-bold text-white text-center">{word.english}</p>
+          {word.englishSentence && (
+            <p className="text-blue-100 mt-3 text-center italic text-base">"{word.englishSentence}"</p>
+          )}
         </div>
       </div>
     </div>
