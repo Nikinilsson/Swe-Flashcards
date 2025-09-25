@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -262,6 +263,12 @@ const PencilIcon: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
+const RefreshIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${className || ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h5m7 10v-5h-5M20.49 9A9 9 0 005.51 9M3.51 15A9 9 0 0018.49 15" />
+    </svg>
+);
+
 // ============================================================================
 // === INLINED: components/IconButton.tsx ===
 // ============================================================================
@@ -524,9 +531,10 @@ interface WelcomeScreenProps {
   stats: UserStats;
   levelInfo: LevelInfo;
   activityProgress: ActivityProgress;
+  onScrambleWords: () => void;
 }
 
-const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onModeSelect, loading, stats, levelInfo, activityProgress }) => {
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onModeSelect, loading, stats, levelInfo, activityProgress, onScrambleWords }) => {
   const isCompleted = (mode: Mode) => activityProgress.completedModes.includes(mode);
 
   return (
@@ -547,15 +555,23 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onModeSelect, loading, st
       <div className="w-full mt-6">
         <p className="font-semibold text-shadow mb-3">Choose an activity:</p>
         <div className="flex flex-col gap-4">
-           <ModeButton icon={<CardsIcon />} label="Flashcards" onClick={() => onModeSelect('flashcard')} disabled={loading || isCompleted('flashcard')} completed={isCompleted('flashcard')} isFullWidth />
+           <ModeButton icon={<CardsIcon />} label="Flashcards" onClick={() => onModeSelect('flashcard')} disabled={loading} completed={isCompleted('flashcard')} isFullWidth />
            <div className="grid grid-cols-2 gap-4">
-             <ModeButton icon={<ShuffleIcon />} label="Scramble" onClick={() => onModeSelect('scramble')} disabled={loading || isCompleted('scramble')} completed={isCompleted('scramble')} />
-             <ModeButton icon={<MagnifyingGlassIcon />} label="Grammar" onClick={() => onModeSelect('grammar')} disabled={loading || isCompleted('grammar')} completed={isCompleted('grammar')} />
-             <ModeButton icon={<PencilIcon />} label="Word Quiz" onClick={() => onModeSelect('quiz')} disabled={loading || isCompleted('quiz')} completed={isCompleted('quiz')} />
-             <ModeButton icon={<TimerIcon />} label="Challenge" onClick={() => onModeSelect('challenge')} disabled={loading || isCompleted('challenge')} completed={isCompleted('challenge')} />
+             <ModeButton icon={<ShuffleIcon />} label="Scramble" onClick={() => onModeSelect('scramble')} disabled={loading} completed={isCompleted('scramble')} />
+             <ModeButton icon={<MagnifyingGlassIcon />} label="Grammar" onClick={() => onModeSelect('grammar')} disabled={loading} completed={isCompleted('grammar')} />
+             <ModeButton icon={<PencilIcon />} label="Word Quiz" onClick={() => onModeSelect('quiz')} disabled={loading} completed={isCompleted('quiz')} />
+             <ModeButton icon={<TimerIcon />} label="Challenge" onClick={() => onModeSelect('challenge')} disabled={loading} completed={isCompleted('challenge')} />
            </div>
         </div>
         <p className="text-sm text-slate-300 mt-4 text-shadow min-h-[20px] animate-pulse">{loading && 'Generating fresh content for you...'}</p>
+        <button 
+            onClick={onScrambleWords}
+            disabled={loading}
+            className="mt-2 w-full flex items-center justify-center p-2 bg-white/10 backdrop-blur-sm rounded-lg shadow-md transition-all duration-200 transform hover:bg-white/20 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+            <RefreshIcon className="mr-2" />
+            <span className="font-semibold text-sm">New Words for Today</span>
+        </button>
       </div>
     </div>
   );
@@ -1012,6 +1028,36 @@ const App: React.FC = () => {
       setCompletionCount(count);
   }, []);
 
+  const fetchNewContent = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const ai = new GoogleGenAI({ apiKey: window.GEMINI_API_KEY! });
+      const wordsSchema = { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { swedish: { type: Type.STRING }, english: { type: Type.STRING }, swedishSentence: { type: Type.STRING }, englishSentence: { type: Type.STRING } }, required: ['swedish', 'english', 'swedishSentence', 'englishSentence'] } };
+      const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
+      const wordsPromise = ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Generate a list of 20 simple Swedish words for a beginner flashcard app, based on the theme of "${randomTheme}". For each word, provide its English translation and a simple example sentence in both Swedish and English using the word.`, config: { responseMimeType: "application/json", responseSchema: wordsSchema } });
+      const factPromise = ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Generate one short, interesting, and fun fact about Sweden related to the topic of "${randomTheme}". The fact should be a single sentence and not enclosed in quotes.` });
+      const [wordsResponse, factResponse] = await Promise.all([wordsPromise, factPromise]);
+      const newWords: Word[] = cleanAndParseJson(wordsResponse.text);
+      const newFact = factResponse.text.trim();
+      if (Array.isArray(newWords) && newWords.length > 0 && newFact) { setWords(newWords); setFunFact(newFact); setCurrentIndex(0); } 
+      else { throw new Error("API returned invalid data format."); }
+    } catch (err) {
+      console.error("Failed to fetch new content:", err);
+      setError("Could not generate new content. Using the default set.");
+      setWords(staticWords);
+      setFunFact("Sweden is the third-largest country in the European Union by area.");
+    } finally { setLoading(false); }
+  }, []);
+
+  const handleScrambleWords = useCallback(async () => {
+    const todayStr = toLocaleDateStringISO(new Date());
+    const initialProgress = { date: todayStr, completedModes: [], points: {}, missedItems: [] };
+    setActivityProgress(initialProgress);
+    localStorage.setItem('svenskaActivityProgress', JSON.stringify(initialProgress));
+    await fetchNewContent();
+  }, [fetchNewContent]);
+
   useEffect(() => {
     if (!window.GEMINI_API_KEY || window.GEMINI_API_KEY === 'YOUR_API_KEY_HERE') { setApiKeyStatus('invalid'); setLoading(false); return; }
     setApiKeyStatus('valid');
@@ -1036,30 +1082,11 @@ const App: React.FC = () => {
     const storedHistoryRaw = localStorage.getItem('svenskaDailyResults');
     if(storedHistoryRaw) setHistoricalResults(JSON.parse(storedHistoryRaw));
     
-    const fetchNewContent = async () => {
-      const initialDatesRaw = localStorage.getItem('svenskaCompletionDates');
-      updateWeeklyProgressDisplay(initialDatesRaw ? JSON.parse(initialDatesRaw) : []);
-      setLoading(true); setError(null);
-      try {
-        const ai = new GoogleGenAI({ apiKey: window.GEMINI_API_KEY! });
-        const wordsSchema = { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { swedish: { type: Type.STRING }, english: { type: Type.STRING }, swedishSentence: { type: Type.STRING }, englishSentence: { type: Type.STRING } }, required: ['swedish', 'english', 'swedishSentence', 'englishSentence'] } };
-        const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
-        const wordsPromise = ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Generate a list of 20 simple Swedish words for a beginner flashcard app, based on the theme of "${randomTheme}". For each word, provide its English translation and a simple example sentence in both Swedish and English using the word.`, config: { responseMimeType: "application/json", responseSchema: wordsSchema } });
-        const factPromise = ai.models.generateContent({ model: 'gemini-2.5-flash', contents: `Generate one short, interesting, and fun fact about Sweden related to the topic of "${randomTheme}". The fact should be a single sentence and not enclosed in quotes.` });
-        const [wordsResponse, factResponse] = await Promise.all([wordsPromise, factPromise]);
-        const newWords: Word[] = cleanAndParseJson(wordsResponse.text);
-        const newFact = factResponse.text.trim();
-        if (Array.isArray(newWords) && newWords.length > 0 && newFact) { setWords(newWords); setFunFact(newFact); setCurrentIndex(0); } 
-        else { throw new Error("API returned invalid data format."); }
-      } catch (err) {
-        console.error("Failed to fetch new content:", err);
-        setError("Could not generate new content. Using the default set.");
-        setWords(staticWords);
-        setFunFact("Sweden is the third-largest country in the European Union by area.");
-      } finally { setLoading(false); }
-    };
+    const initialDatesRaw = localStorage.getItem('svenskaCompletionDates');
+    updateWeeklyProgressDisplay(initialDatesRaw ? JSON.parse(initialDatesRaw) : []);
+    
     fetchNewContent();
-  }, [updateWeeklyProgressDisplay]);
+  }, [updateWeeklyProgressDisplay, fetchNewContent]);
 
   const handleNext = useCallback(() => setCurrentIndex((prev) => (prev + 1) % words.length), [words.length]);
   const handlePrev = useCallback(() => setCurrentIndex((prev) => (prev - 1 + words.length) % words.length), [words.length]);
@@ -1081,7 +1108,8 @@ const App: React.FC = () => {
     const allModes: ('flashcard' | 'scramble' | 'grammar' | 'challenge' | 'quiz')[] = ['flashcard', 'scramble', 'grammar', 'challenge', 'quiz'];
     const allDone = allModes.every(m => newProgress.completedModes.includes(m));
     if (allDone) {
-        const totalPoints = Object.values(newProgress.points).reduce((sum, pts) => sum + (pts || 0), 0);
+        // FIX: Explicitly convert `pts` to a number to handle `unknown` type from Object.values and resolve errors with `+` operator and type assignment.
+        const totalPoints = Object.values(newProgress.points).reduce((sum, pts) => sum + (Number(pts) || 0), 0);
         const finalResult: DailyResult = { date: newProgress.date, totalPoints, points: newProgress.points, missedItems: newProgress.missedItems };
         const newHistory = [finalResult, ...historicalResults.filter(h => h.date !== finalResult.date)].slice(0, 30);
         setHistoricalResults(newHistory);
@@ -1106,7 +1134,7 @@ const App: React.FC = () => {
   const currentWord = words[currentIndex];
   const renderContent = () => {
     switch (view) {
-      case 'welcome': return <WelcomeScreen onModeSelect={(mode) => setView(mode)} loading={loading} stats={userStats} levelInfo={levelInfo} activityProgress={activityProgress} />;
+      case 'welcome': return <WelcomeScreen onModeSelect={(mode) => setView(mode)} loading={loading} stats={userStats} levelInfo={levelInfo} activityProgress={activityProgress} onScrambleWords={handleScrambleWords} />;
       case 'challenge': return <ChallengeMode words={words} onComplete={(xp, points) => handleActivityComplete('challenge', xp, points)} onExit={() => setView('welcome')} />;
       case 'scramble': return <SentenceScramble onFinish={(xp, points, missed) => handleActivityComplete('scramble', xp, points, missed)} onExit={() => setView('welcome')}/>;
       case 'grammar': return <GrammarDetective onFinish={(xp, points, missed) => handleActivityComplete('grammar', xp, points, missed)} onExit={() => setView('welcome')}/>;

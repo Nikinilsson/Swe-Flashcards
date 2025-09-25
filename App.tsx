@@ -245,7 +245,8 @@ const App: React.FC = () => {
     const allDone = allModes.every(m => newProgress.completedModes.includes(m));
 
     if (allDone) {
-        const totalPoints = Object.values(newProgress.points).reduce((sum, pts) => sum + (pts || 0), 0);
+        // FIX: Explicitly convert `pts` to a number to handle `unknown` type from Object.values and resolve errors with `+` operator and type assignment.
+        const totalPoints = Object.values(newProgress.points).reduce((sum, pts) => sum + (Number(pts) || 0), 0);
         const finalResult: DailyResult = {
             date: newProgress.date,
             totalPoints,
